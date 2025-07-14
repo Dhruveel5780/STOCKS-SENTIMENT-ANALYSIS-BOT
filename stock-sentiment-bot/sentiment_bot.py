@@ -43,6 +43,7 @@ class StockSentimentBot:
             for entry in feed.entries:
                 # Extract article data
                 title = entry.get('title', 'No Title')
+                print(f"   Processing article: {title}")
                 description = entry.get('summary', entry.get('description', ''))
                 link = entry.get('link', '')
                 published = entry.get('published', '')
