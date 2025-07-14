@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 from collections import Counter
 from textblob import TextBlob
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from transformers import BertTokenizer, BertForSequenceClassification
+import torch
 from dotenv import load_dotenv
 import json
 import re
@@ -27,6 +29,18 @@ load_dotenv()
 class MultiSourceStockSentimentBot:
     def __init__(self):
         self.vader_analyzer = SentimentIntensityAnalyzer()
+        
+        # Initialize FINBERT for financial sentiment analysis
+        print("🤖 Loading FINBERT model...")
+        try:
+            self.finbert_tokenizer = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
+            self.finbert_model = BertForSequenceClassification.from_pretrained('yiyanghkust/finbert-tone')
+            print("✅ FINBERT model loaded successfully")
+        except Exception as e:
+            print(f"⚠️  Could not load FINBERT model: {e}")
+            print("   Falling back to TextBlob + VADER only")
+            self.finbert_tokenizer = None
+            self.finbert_model = None
         
         # Initialize RSS feed sources - only trusted Indian financial news sources
         self.rss_sources = {
@@ -572,6 +586,42 @@ class MultiSourceStockSentimentBot:
         except Exception as e:
             print(f"VADER error: {e}")
             return 0
+    
+    def analyze_sentiment_finbert(self, text):
+        """
+        Analyze sentiment using FINBERT
+        Returns sentiment score (-1 to 1) and probabilities
+        """
+        if self.finbert_tokenizer is None or self.finbert_model is None:
+            return 0, [0, 0, 0]  # neutral sentiment if model not available
+        
+        try:
+            # Truncate text to max length for BERT (512 tokens)
+            max_length = 512
+            inputs = self.finbert_tokenizer.encode_plus(
+                text,
+                add_special_tokens=True,
+                max_length=max_length,
+                padding='max_length',
+                truncation=True,
+                return_attention_mask=True,
+                return_tensors='pt'
+            )
+            
+            with torch.no_grad():
+                outputs = self.finbert_model(**inputs)
+                predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+                probabilities = predictions[0].detach().numpy()
+            
+            # FINBERT output classes: [negative, neutral, positive]
+            # Convert to sentiment score (-1 to 1)
+            sentiment_score = probabilities[2] - probabilities[0]  # positive - negative
+            
+            return sentiment_score, probabilities.tolist()
+            
+        except Exception as e:
+            print(f"FINBERT error: {e}")
+            return 0, [0, 0, 0]
     
     def calculate_sentiment_scores(self, articles):
         """
