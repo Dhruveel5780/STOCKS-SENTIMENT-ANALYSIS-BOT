@@ -31,14 +31,14 @@ class MultiSourceStockSentimentBot:
         self.vader_analyzer = SentimentIntensityAnalyzer()
         
         # Initialize FINBERT for financial sentiment analysis
-        print("🤖 Loading FINBERT model...")
+        print("Loading FINBERT model...")
         try:
             self.finbert_tokenizer = BertTokenizer.from_pretrained('yiyanghkust/finbert-tone')
             self.finbert_model = BertForSequenceClassification.from_pretrained('yiyanghkust/finbert-tone')
-            print("✅ FINBERT model loaded successfully")
+            print("FINBERT model loaded successfully")
         except Exception as e:
-            print(f"⚠️  Could not load FINBERT model: {e}")
-            print("   Falling back to TextBlob + VADER only")
+            print(f"Could not load FINBERT model: {e}")
+            print("Falling back to TextBlob + VADER only")
             self.finbert_tokenizer = None
             self.finbert_model = None
         
@@ -56,8 +56,8 @@ class MultiSourceStockSentimentBot:
             'CNBC TV18'
         ]
         
-        print("✅ RSS feed sources initialized")
-        print(f"📰 Configured {len(self.rss_sources)} RSS sources")
+        print("RSS feed sources initialized")
+        print(f"Configured {len(self.rss_sources)} RSS sources")
         
         # Initialize company-to-ticker mapping
         self.company_ticker_map = self._load_company_ticker_mapping()
@@ -735,7 +735,7 @@ class MultiSourceStockSentimentBot:
         Main method to analyze stock sentiment from multiple sources
         """
         # Convert company name to stock ticker
-        print(f"\n🔍 Processing input: '{company_input}'")
+print(f"Processing input: '{company_input}'")
         stock_symbol = self.find_stock_ticker(company_input)
         
         if stock_symbol != company_input.upper():
@@ -743,7 +743,7 @@ class MultiSourceStockSentimentBot:
         else:
             print(f"📊 Using ticker: {stock_symbol}")
         
-        print(f"\n🔍 Analyzing sentiment for {stock_symbol}...")
+        print(f"Analyzing sentiment for {stock_symbol}...")
         print("=" * 60)
         
         # Fetch news from all sources
